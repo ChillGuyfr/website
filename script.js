@@ -1,13 +1,3 @@
-// Loading screen
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        document.getElementById('loading-screen').style.opacity = '0';
-        setTimeout(() => {
-            document.getElementById('loading-screen').style.display = 'none';
-        }, 500);
-    }, 1500);
-});
-
 let currentTransformation = 'wrap';
 
 function setTransformation(type) {
@@ -23,7 +13,7 @@ function transformText() {
         let transformedText = '';
         switch (currentTransformation) {
             case 'wrap':
-                transformedText = text.split('').map(char => <${char}>).join('');
+                transformedText = text.split('').map(char => `<${char}>`).join('');
                 break;
             case 'leetspeak':
                 transformedText = text.replace(/a/g, '4')
