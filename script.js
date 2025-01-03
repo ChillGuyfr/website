@@ -1,74 +1,93 @@
-document.getElementById("sendBtn").addEventListener("click", () => {
-    const webhookUrl = document.getElementById("webhook").value;
-    const message = document.getElementById("message").value;
-    const announcementTime = document.getElementById("announcement-time").value;
-    const options = getCheckedOptions();
+document.getElementById('sendBtn').addEventListener('click', () => {
+    // Get the Webhook URL and message
+    const webhookUrl = document.getElementById('webhook').value;
+    const message = document.getElementById('message').value;
 
-    if (webhookUrl === "" || message === "") {
-        document.getElementById("status").textContent = "Please fill in the webhook and message.";
+    // Check if the webhook URL is valid
+    if (!webhookUrl || !message) {
+        alert("Please provide both a valid webhook URL and a message.");
         return;
     }
 
-    document.getElementById("status").textContent = "Sending message...";
-
-    // Simulate sending a message
-    setTimeout(() => {
-        sendMessageToWebhook(webhookUrl, message, options);
-    }, announcementTime * 1000); // Send after the specified time
-});
-
-function sendMessageToWebhook(webhookUrl, message, options) {
-    // Construct message with selected options
-    let finalMessage = message;
-
-    // Apply selected options to message
-    if (options.mentionEveryone) finalMessage = "@everyone " + finalMessage;
-    if (options.mentionHere) finalMessage = "@here " + finalMessage;
-    if (options.addTimestamp) finalMessage += " " + new Date().toISOString();
-    if (options.spoilerTag) finalMessage = "||" + finalMessage + "||";
-    if (options.customEmoji) finalMessage += " :customemoji:"; // Assuming custom emoji ID is handled
-
-    const embed = {
-        title: options.richEmbedTitle ? "Custom Embed Title" : undefined,
-        description: options.description ? "This is a description" : undefined,
-        color: options.changeColor ? 0x00ff00 : undefined, // Example color change (green)
-        footer: options.footerText ? { text: "Custom Footer" } : undefined,
-        image: options.includeImage ? { url: "https://example.com/image.png" } : undefined,
-        video: options.includeVideo ? { url: "https://example.com/video.mp4" } : undefined,
-        timestamp: options.addTimestamp ? new Date().toISOString() : undefined,
+    // Prepare the payload
+    let payload = {
+        content: message
     };
 
-    const payload = {
-        content: finalMessage,
-        embeds: [embed],
-    };
+    // Check additional options and add them to the payload
+    if (document.getElementById('mentionEveryone').checked) {
+        payload.content = "@everyone " + payload.content;
+    }
 
-    console.log(`Sending message to ${webhookUrl}`);
-    console.log(`Message: ${finalMessage}`);
-    console.log("Embed: ", embed);
+    if (document.getElementById('mentionHere').checked) {
+        payload.content = "@here " + payload.content;
+    }
 
-    // Example for actual sending the request to Discord webhook
+    if (document.getElementById('addTimestamp').checked) {
+        payload.timestamp = new Date().toISOString();
+    }
+
+    if (document.getElementById('customEmoji').checked) {
+        payload.content += " :custom_emoji:";
+    }
+
+    if (document.getElementById('sendEmbed').checked) {
+        payload.embeds = [{
+            title: "Embed Title",
+            description: "This is an embed description",
+            color: 16711680,  // Red color
+            timestamp: new Date().toISOString()
+        }];
+    }
+
+    if (document.getElementById('includeImage').checked) {
+        payload.embeds = payload.embeds || [];
+        payload.embeds[0] = payload.embeds[0] || {};
+        payload.embeds[0].image = { url: "https://example.com/image.png" };
+    }
+
+    if (document.getElementById('includeVideo').checked) {
+        payload.embeds = payload.embeds || [];
+        payload.embeds[0] = payload.embeds[0] || {};
+        payload.embeds[0].video = { url: "https://example.com/video.mp4" };
+    }
+
+    if (document.getElementById('addFile').checked) {
+        alert("File attachment feature is not implemented here.");
+    }
+
+    if (document.getElementById('changeColor').checked) {
+        payload.embeds = payload.embeds || [];
+        payload.embeds[0] = payload.embeds[0] || {};
+        payload.embeds[0].color = 3447003;  // Blue color
+    }
+
+    if (document.getElementById('footerText').checked) {
+        payload.embeds = payload.embeds || [];
+        payload.embeds[0] = payload.embeds[0] || {};
+        payload.embeds[0].footer = { text: "This is the footer text" };
+    }
+
+    if (document.getElementById('authorName').checked) {
+        payload.embeds = payload.embeds || [];
+        payload.embeds[0] = payload.embeds[0] || {};
+        payload.embeds[0].author = { name: "Author Name", icon_url: "https://example.com/author_icon.png" };
+    }
+
+    // Send request to the Discord Webhook
     fetch(webhookUrl, {
-        method: "POST",
+        method: 'POST',
         headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json'
         },
-        body: JSON.stringify(payload),
-    }).then(() => {
-        document.getElementById("status").textContent = "Message sent successfully!";
-    }).catch(error => {
-        document.getElementById("status").textContent = "Failed to send message!";
-        console.error(error);
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('status').textContent = "Message sent successfully!";
+    })
+    .catch(error => {
+        document.getElementById('status').textContent = "Error sending message.";
+        console.error("Error sending message: ", error);
     });
-}
-
-function getCheckedOptions() {
-    const checkedOptions = {};
-
-    // Iterate over all checkboxes and capture their states
-    document.querySelectorAll("input[type='checkbox']").forEach(checkbox => {
-        checkedOptions[checkbox.id] = checkbox.checked;
-    });
-
-    return checkedOptions;
-}
+});
