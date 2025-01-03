@@ -44,8 +44,8 @@ function transformText() {
                 transformedText = btoa(text);
                 break;
             case 'sha256':
-                transformedText = sha256(text);
-                break;
+                sha256(text).then(hash => output.textContent = hash);
+                return;
             case 'removeSpaces':
                 transformedText = text.replace(/\s+/g, '');
                 break;
@@ -87,7 +87,79 @@ function showTab(tabId) {
     });
 }
 
-// Helper functions
+// Discord Tools
+let spamInterval;
+
+function sendMessage() {
+    const webhookURL = document.getElementById('webhook-url').value;
+    const messageContent = document.getElementById('message-content').value;
+
+    if (webhookURL && messageContent) {
+        fetch(webhookURL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ content: messageContent })
+        }).then(response => {
+            if (response.ok) {
+                updateMessageCounter();
+                displayStatus('Message sent successfully!', 'success');
+            } else {
+                displayStatus('Failed to send message. Check the webhook URL.', 'error');
+            }
+        }).catch(() => displayStatus('An error occurred.', 'error'));
+    } else {
+        displayStatus('Please provide a valid webhook URL and message content.', 'error');
+    }
+}
+
+function toggleSpam() {
+    const webhookURL = document.getElementById('webhook-url').value;
+    const messageContent = document.getElementById('message-content').value;
+    const spamButton = document.getElementById('spam-btn');
+
+    if (spamInterval) {
+        clearInterval(spamInterval);
+        spamInterval = null;
+        spamButton.textContent = 'Start Spam';
+    } else if (webhookURL && messageContent) {
+        spamInterval = setInterval(() => sendMessage(), 1000);
+        spamButton.textContent = 'Stop Spam';
+    } else {
+        displayStatus('Please provide a valid webhook URL and message content.', 'error');
+    }
+}
+
+function deleteWebhook() {
+    const webhookURL = document.getElementById('webhook-url').value;
+
+    if (webhookURL) {
+        fetch(webhookURL, { method: 'DELETE' }).then(response => {
+            if (response.ok) {
+                displayStatus('Webhook deleted successfully!', 'success');
+            } else {
+                displayStatus('Failed to delete webhook. Check the webhook URL.', 'error');
+            }
+        }).catch(() => displayStatus('An error occurred.', 'error'));
+    } else {
+        displayStatus('Please provide a valid webhook URL.', 'error');
+    }
+}
+
+function updateMessageCounter() {
+    const counter = document.getElementById('message-counter');
+    counter.textContent = parseInt(counter.textContent) + 1;
+}
+
+function displayStatus(message, type) {
+    const statusMessage = document.getElementById('status-message');
+    statusMessage.textContent = message;
+    statusMessage.className = `status ${type}`;
+    setTimeout(() => statusMessage.textContent = '', 3000);
+}
+
+// Helper Functions
 function pigLatin(text) {
     return text.split(' ').map(word => {
         let firstLetter = word[0];
