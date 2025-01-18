@@ -2,11 +2,11 @@ import { Groq } from 'groq-sdk';
 
 const groq = new Groq({
   apiKey: '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',
-  dangerouslyAllowBrowser: true // Enable browser usage
+  dangerouslyAllowBrowser: true
 });
 
-// Make functions available globally
-globalThis.switchTab = function(tabId) {
+// Tab switching functionality
+window.switchTab = function(tabId) {
   // Update active tab button
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.remove('active');
@@ -25,7 +25,8 @@ globalThis.switchTab = function(tabId) {
   });
 };
 
-globalThis.generateSettings = async function() {
+// Generate settings for calculator tab
+window.generateSettings = async function() {
   const game = document.getElementById('game').value;
   const intensity = document.getElementById('intensity').value;
   const trickshots = document.getElementById('trickshots').checked;
@@ -64,9 +65,10 @@ Please provide the optimal sensitivity and DPI values accordingly.`;
     let result = '';
     for await (const chunk of completion) {
       result += chunk.choices[0]?.delta?.content || '';
+      // Update content in real-time as chunks arrive
+      document.getElementById('settings-content').textContent = result;
     }
 
-    document.getElementById('settings-content').textContent = result;
     document.getElementById('result').classList.remove('hidden');
     document.getElementById('result').classList.add('visible');
   } catch (error) {
@@ -78,7 +80,8 @@ Please provide the optimal sensitivity and DPI values accordingly.`;
   }
 };
 
-globalThis.generatePrompt = async function() {
+// Generate prompt for prompt generator tab
+window.generatePrompt = async function() {
   const game = document.getElementById('prompt-game').value;
   const skillLevel = document.getElementById('skill-level').value;
   const goals = document.getElementById('goals').value;
@@ -109,9 +112,10 @@ Keep it concise but informative, perfect for generating sensitivity settings.`;
     let result = '';
     for await (const chunk of completion) {
       result += chunk.choices[0]?.delta?.content || '';
+      // Update content in real-time as chunks arrive
+      document.getElementById('prompt-content').textContent = result;
     }
 
-    document.getElementById('prompt-content').textContent = result;
     document.getElementById('prompt-result').classList.remove('hidden');
     document.getElementById('prompt-result').classList.add('visible');
   } catch (error) {
@@ -123,7 +127,8 @@ Keep it concise but informative, perfect for generating sensitivity settings.`;
   }
 };
 
-globalThis.usePrompt = function() {
+// Use generated prompt in calculator
+window.usePrompt = function() {
   const generatedPrompt = document.getElementById('prompt-content').textContent;
   document.getElementById('description').value = generatedPrompt;
   switchTab('calculator');
