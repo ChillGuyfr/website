@@ -1,12 +1,48 @@
 import { Groq } from 'groq-sdk';
 
 const groq = new Groq({
-  apiKey: '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'
+  apiKey: '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',
+  dangerouslyAllowBrowser: true // Enable browser usage
 });
 
-async function generateSettings(gameType, intensity, trickshots, description) {
-  const prompt = `Based on the following inputs, calculate the best ${gameType} sensitivity and DPI settings:
-Game Type: ${gameType}
+// Make functions available globally
+globalThis.switchTab = function(tabId) {
+  // Update active tab button
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if (btn.textContent.toLowerCase().includes(tabId)) {
+      btn.classList.add('active');
+    }
+  });
+
+  // Show/hide tab content
+  document.querySelectorAll('.tab-content').forEach(content => {
+    if (content.id === tabId) {
+      content.classList.remove('hidden');
+    } else {
+      content.classList.add('hidden');
+    }
+  });
+};
+
+globalThis.generateSettings = async function() {
+  const game = document.getElementById('game').value;
+  const intensity = document.getElementById('intensity').value;
+  const trickshots = document.getElementById('trickshots').checked;
+  const description = document.getElementById('description').value;
+
+  if (!game || !intensity || !description) {
+    alert('Please fill in all required fields!');
+    return;
+  }
+
+  const generateBtn = document.querySelector('#calculator .generate-btn');
+  generateBtn.disabled = true;
+  generateBtn.textContent = 'Generating...';
+
+  try {
+    const prompt = `Based on the following inputs, calculate the best ${game} sensitivity and DPI settings:
+Game Type: ${game}
 Game Intensity: ${intensity}
 Trickshots: ${trickshots ? 'Yes' : 'No'}
 Description: ${description}
@@ -16,7 +52,6 @@ Important rules:
 - DPI must be between 100 and 800 (inclusive). Provide the best possible DPI value in this range.
 Please provide the optimal sensitivity and DPI values accordingly.`;
 
-  try {
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
       model: 'llama-3.3-70b-versatile',
@@ -30,19 +65,38 @@ Please provide the optimal sensitivity and DPI values accordingly.`;
     for await (const chunk of completion) {
       result += chunk.choices[0]?.delta?.content || '';
     }
-    return result;
-  } catch (error) {
-    console.error('Error generating settings:', error);
-    throw error;
-  }
-}
 
-async function generateCustomPrompt(game, skillLevel, goals) {
-  const prompt = `Create a detailed gaming profile description for a ${skillLevel} ${game} player with the following goals: ${goals}. 
+    document.getElementById('settings-content').textContent = result;
+    document.getElementById('result').classList.remove('hidden');
+    document.getElementById('result').classList.add('visible');
+  } catch (error) {
+    alert('Error generating settings. Please try again.');
+    console.error('Error:', error);
+  } finally {
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Generate Perfect Settings';
+  }
+};
+
+globalThis.generatePrompt = async function() {
+  const game = document.getElementById('prompt-game').value;
+  const skillLevel = document.getElementById('skill-level').value;
+  const goals = document.getElementById('goals').value;
+
+  if (!game || !skillLevel || !goals) {
+    alert('Please fill in all required fields!');
+    return;
+  }
+
+  const generateBtn = document.querySelector('#prompt .generate-btn');
+  generateBtn.disabled = true;
+  generateBtn.textContent = 'Generating...';
+
+  try {
+    const prompt = `Create a detailed gaming profile description for a ${skillLevel} ${game} player with the following goals: ${goals}. 
 Focus on describing their playstyle, preferred strategies, and what they want to achieve. 
 Keep it concise but informative, perfect for generating sensitivity settings.`;
 
-  try {
     const completion = await groq.chat.completions.create({
       messages: [{ role: 'user', content: prompt }],
       model: 'llama-3.3-70b-versatile',
@@ -56,128 +110,21 @@ Keep it concise but informative, perfect for generating sensitivity settings.`;
     for await (const chunk of completion) {
       result += chunk.choices[0]?.delta?.content || '';
     }
-    return result;
-  } catch (error) {
-    console.error('Error generating prompt:', error);
-    throw error;
-  }
-}
 
-// DOM Elements
-const elements = {
-  tabs: document.querySelectorAll('.tab-btn'),
-  tabContents: document.querySelectorAll('.tab-content'),
-  calculator: {
-    game: document.getElementById('game'),
-    intensity: document.getElementById('intensity'),
-    trickshots: document.getElementById('trickshots'),
-    description: document.getElementById('description'),
-    generateBtn: document.getElementById('generate'),
-    result: document.getElementById('result'),
-    settingsContent: document.getElementById('settings-content')
-  },
-  prompt: {
-    game: document.getElementById('prompt-game'),
-    skillLevel: document.getElementById('skill-level'),
-    goals: document.getElementById('goals'),
-    generateBtn: document.getElementById('generate-prompt'),
-    result: document.getElementById('prompt-result'),
-    content: document.getElementById('prompt-content'),
-    usePromptBtn: document.getElementById('use-prompt')
+    document.getElementById('prompt-content').textContent = result;
+    document.getElementById('prompt-result').classList.remove('hidden');
+    document.getElementById('prompt-result').classList.add('visible');
+  } catch (error) {
+    alert('Error generating prompt. Please try again.');
+    console.error('Error:', error);
+  } finally {
+    generateBtn.disabled = false;
+    generateBtn.textContent = 'Generate Custom Prompt';
   }
 };
 
-// Wait for DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', () => {
-  // Tab Switching
-  elements.tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      const targetTab = tab.dataset.tab;
-      
-      // Update active tab
-      elements.tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      
-      // Show/hide content
-      elements.tabContents.forEach(content => {
-        if (content.id === targetTab) {
-          content.classList.remove('hidden');
-        } else {
-          content.classList.add('hidden');
-        }
-      });
-    });
-  });
-
-  // Calculator Form Submit
-  elements.calculator.generateBtn.addEventListener('click', async () => {
-    const { game, intensity, trickshots, description, generateBtn, result, settingsContent } = elements.calculator;
-    
-    if (!game.value || !intensity.value || !description.value) {
-      alert('Please fill in all required fields!');
-      return;
-    }
-
-    generateBtn.disabled = true;
-    generateBtn.textContent = 'Generating...';
-
-    try {
-      const settings = await generateSettings(
-        game.value,
-        intensity.value,
-        trickshots.checked,
-        description.value
-      );
-
-      settingsContent.textContent = settings;
-      result.classList.remove('hidden');
-      result.classList.add('visible');
-    } catch (error) {
-      alert('Error generating settings. Please try again.');
-    } finally {
-      generateBtn.disabled = false;
-      generateBtn.textContent = 'Generate Perfect Settings';
-    }
-  });
-
-  // Prompt Generator Submit
-  elements.prompt.generateBtn.addEventListener('click', async () => {
-    const { game, skillLevel, goals, generateBtn, result, content } = elements.prompt;
-    
-    if (!game.value || !skillLevel.value || !goals.value) {
-      alert('Please fill in all required fields!');
-      return;
-    }
-
-    generateBtn.disabled = true;
-    generateBtn.textContent = 'Generating...';
-
-    try {
-      const customPrompt = await generateCustomPrompt(
-        game.value,
-        skillLevel.value,
-        goals.value
-      );
-
-      content.textContent = customPrompt;
-      result.classList.remove('hidden');
-      result.classList.add('visible');
-    } catch (error) {
-      alert('Error generating prompt. Please try again.');
-    } finally {
-      generateBtn.disabled = false;
-      generateBtn.textContent = 'Generate Custom Prompt';
-    }
-  });
-
-  // Use Generated Prompt
-  elements.prompt.usePromptBtn.addEventListener('click', () => {
-    const generatedPrompt = elements.prompt.content.textContent;
-    
-    // Switch to calculator tab
-    elements.tabs[0].click();
-    
-    // Fill in the description
-    elements.calculator.description.value = generatedPrompt;
-  });
-});
+globalThis.usePrompt = function() {
+  const generatedPrompt = document.getElementById('prompt-content').textContent;
+  document.getElementById('description').value = generatedPrompt;
+  switchTab('calculator');
+};
