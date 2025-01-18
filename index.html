@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SensBot - AI Gaming Sensitivity Calculator</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="ipad-pro">
+        <div class="content">
+          <h1>SensBot</h1>
+          <p class="subtitle">AI-Powered Gaming Sensitivity Calculator</p>
+
+          <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('calculator')">Calculator</button>
+            <button class="tab-btn" onclick="switchTab('prompt')">Prompt Generator</button>
+          </div>
+
+          <div class="tab-content" id="calculator">
+            <div class="form-group">
+              <label for="game">Game</label>
+              <select id="game" required>
+                <option value="">Select a game</option>
+                <option value="csgo">CS:GO</option>
+                <option value="valorant">Valorant</option>
+                <option value="fortnite">Fortnite</option>
+                <option value="roblox">Roblox</option>
+                <option value="apex">Apex Legends</option>
+                <option value="overwatch">Overwatch 2</option>
+                <option value="warzone">Call of Duty: Warzone</option>
+                <option value="rainbow6">Rainbow Six Siege</option>
+                <option value="pubg">PUBG</option>
+                <option value="minecraft">Minecraft</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="intensity">Game Intensity</label>
+              <select id="intensity" required>
+                <option value="">Select intensity</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="competitive">Competitive</option>
+                <option value="professional">Professional</option>
+              </select>
+            </div>
+
+            <div class="form-group checkbox">
+              <input type="checkbox" id="trickshots">
+              <label for="trickshots">Optimize for trickshots</label>
+            </div>
+
+            <div class="form-group">
+              <label for="description">Playstyle Description</label>
+              <textarea id="description" rows="4" placeholder="Describe your playstyle..."></textarea>
+            </div>
+
+            <button onclick="generateSettings()" class="generate-btn">Generate Perfect Settings</button>
+
+            <div id="result" class="result hidden">
+              <h2>Your Perfect Settings</h2>
+              <div id="settings-content"></div>
+            </div>
+          </div>
+
+          <div class="tab-content hidden" id="prompt">
+            <div class="form-group">
+              <label for="prompt-game">Game</label>
+              <select id="prompt-game" required>
+                <option value="">Select a game</option>
+                <option value="csgo">CS:GO</option>
+                <option value="valorant">Valorant</option>
+                <option value="fortnite">Fortnite</option>
+                <option value="roblox">Roblox</option>
+                <option value="apex">Apex Legends</option>
+                <option value="overwatch">Overwatch 2</option>
+                <option value="warzone">Call of Duty: Warzone</option>
+                <option value="rainbow6">Rainbow Six Siege</option>
+                <option value="pubg">PUBG</option>
+                <option value="minecraft">Minecraft</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="skill-level">Skill Level</label>
+              <select id="skill-level" required>
+                <option value="">Select skill level</option>
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+                <option value="professional">Professional</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="goals">Gaming Goals</label>
+              <textarea id="goals" rows="4" placeholder="What are your gaming goals? (e.g., improve aim, rank up, compete professionally)"></textarea>
+            </div>
+
+            <button onclick="generatePrompt()" class="generate-btn">Generate Custom Prompt</button>
+
+            <div id="prompt-result" class="result hidden">
+              <h2>Your Custom Prompt</h2>
+              <div id="prompt-content"></div>
+              <button onclick="usePrompt()" class="use-prompt-btn">Use This Prompt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module">
+      import { Groq } from 'groq-sdk';
+
+      const groq = new Groq({
+        apiKey: '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',
+        dangerouslyAllowBrowser: true // Enable browser usage
+      });
+
+      // Make functions available globally
+      globalThis.switchTab = function(tabId) {
+        // Update active tab button
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active');
+          if (btn.textContent.toLowerCase().includes(tabId)) {
+            btn.classList.add('active');
+          }
+        });
+
+        // Show/hide tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+          if (content.id === tabId) {
+            content.classList.remove('hidden');
+          } else {
+            content.classList.add('hidden');
+          }
+        });
+      };
+
+      globalThis.generateSettings = async function() {
+        const game = document.getElementById('game').value;
+        const intensity = document.getElementById('intensity').value;
+        const trickshots = document.getElementById('trickshots').checked;
+        const description = document.getElementById('description').value;
+
+        if (!game || !intensity || !description) {
+          alert('Please fill in all required fields!');
+          return;
+        }
+
+        const generateBtn = document.querySelector('#calculator .generate-btn');
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Generating...';
+
+        try {
+          const prompt = `Based on the following inputs, calculate the best ${game} sensitivity and DPI settings:
+Game Type: ${game}
+Game Intensity: ${intensity}
+Trickshots: ${trickshots ? 'Yes' : 'No'}
+Description: ${description}
+
+Important rules:
+- Sensitivity must be between 0.1 and 1 (inclusive). Provide the best possible sensitivity value in this range.
+- DPI must be between 100 and 800 (inclusive). Provide the best possible DPI value in this range.
+Please provide the optimal sensitivity and DPI values accordingly.`;
+
+          const completion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: 'llama-3.3-70b-versatile',
+            temperature: 1,
+            max_completion_tokens: 32768,
+            top_p: 1,
+            stream: true
+          });
+
+          let result = '';
+          for await (const chunk of completion) {
+            result += chunk.choices[0]?.delta?.content || '';
+          }
+
+          document.getElementById('settings-content').textContent = result;
+          document.getElementById('result').classList.remove('hidden');
+          document.getElementById('result').classList.add('visible');
+        } catch (error) {
+          alert('Error generating settings. Please try again.');
+          console.error('Error:', error);
+        } finally {
+          generateBtn.disabled = false;
+          generateBtn.textContent = 'Generate Perfect Settings';
+        }
+      };
+
+      globalThis.generatePrompt = async function() {
+        const game = document.getElementById('prompt-game').value;
+        const skillLevel = document.getElementById('skill-level').value;
+        const goals = document.getElementById('goals').value;
+
+        if (!game || !skillLevel || !goals) {
+          alert('Please fill in all required fields!');
+          return;
+        }
+
+        const generateBtn = document.querySelector('#prompt .generate-btn');
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Generating...';
+
+        try {
+          const prompt = `Create a detailed gaming profile description for a ${skillLevel} ${game} player with the following goals: ${goals}. 
+Focus on describing their playstyle, preferred strategies, and what they want to achieve. 
+Keep it concise but informative, perfect for generating sensitivity settings.`;
+
+          const completion = await groq.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.7,
+            max_completion_tokens: 32768,
+            top_p: 1,
+            stream: true
+          });
+
+          let result = '';
+          for await (const chunk of completion) {
+            result += chunk.choices[0]?.delta?.content || '';
+          }
+
+          document.getElementById('prompt-content').textContent = result;
+          document.getElementById('prompt-result').classList.remove('hidden');
+          document.getElementById('prompt-result').classList.add('visible');
+        } catch (error) {
+          alert('Error generating prompt. Please try again.');
+          console.error('Error:', error);
+        } finally {
+          generateBtn.disabled = false;
+          generateBtn.textContent = 'Generate Custom Prompt';
+        }
+      };
+
+      globalThis.usePrompt = function() {
+        const generatedPrompt = document.getElementById('prompt-content').textContent;
+        document.getElementById('description').value = generatedPrompt;
+        switchTab('calculator');
+      };
+    </script>
+  </body>
+</html>
