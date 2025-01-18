@@ -1,7 +1,7 @@
 import { Groq } from 'groq-sdk';
 
 const groq = new Groq({
-  apiKey: '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'
+  apiKey: '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'
 });
 
 async function generateSettings(gameType, intensity, trickshots, description) {
